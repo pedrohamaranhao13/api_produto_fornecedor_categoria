@@ -13,6 +13,7 @@ import br.com.phamtecnologias.domain.entities.Fornecedor;
 import br.com.phamtecnologias.domain.entities.Produto;
 import br.com.phamtecnologias.domain.interfaces.ProdutoService;
 import br.com.phamtecnologias.dtos.ProdutoPostDto;
+import br.com.phamtecnologias.dtos.ProdutoPutDto;
 import br.com.phamtecnologias.repositories.CategoriaRepository;
 import br.com.phamtecnologias.repositories.FornecedorRepository;
 import br.com.phamtecnologias.repositories.ProdutoRepository;
@@ -32,16 +33,6 @@ public class ProdutoServiceImpl implements ProdutoService{
 	@Override
 	public void create(ProdutoPostDto dto) throws Exception {
 		
-		Optional<Fornecedor> fornecedor = fornecedorRepository.findById(dto.getIdFornecedor());
-		Optional<Categoria> categoria = categoriaRepository.findById(dto.getIdCategoria());
-		
-		if (fornecedor.isEmpty()) {
-			throw new IllegalArgumentException("Erro. O fornecedor informado não existe.");
-		}
-		if (categoria.isEmpty()) {
-			throw new IllegalArgumentException("Erro. A categoria informado não existe.");
-		}
-		
 		Produto produto = new Produto();
 		
 		produto.setId(UUID.randomUUID());
@@ -49,20 +40,36 @@ public class ProdutoServiceImpl implements ProdutoService{
 		produto.setPreco(new BigDecimal(dto.getPreco()));
 		produto.setQuantidade(dto.getQuantidade());
 		produto.setDescricao(dto.getDescricao());
-		produto.setFornecedor(fornecedor.get());
-		produto.setCategoria(categoria.get());
+		produto.setFornecedor(obterFornecedor(dto.getIdFornecedor()));
+		produto.setCategoria(obterCategoria(dto.getIdCategoria()));
 		
 		produtoRepository.save(produto);
 	}
 
 	@Override
-	public void update(Produto produto) throws Exception {
-		produtoRepository.save(produto);
+	public void update(ProdutoPutDto dto) throws Exception {
+		
+		if(produtoRepository.findById(dto.getId()).isEmpty()) {
+			throw new IllegalArgumentException("Produto não encontrado. Verifique o id informado.");
+		}
+
+		Produto produto = new Produto();
+		
+		produto.setId(dto.getId());
+		produto.setNome(dto.getNome());
+		produto.setPreco(new BigDecimal(dto.getPreco()));
+		produto.setQuantidade(dto.getQuantidade());
+		produto.setDescricao(dto.getDescricao());
+		produto.setFornecedor(obterFornecedor(dto.getIdFornecedor()));
+		produto.setCategoria(obterCategoria(dto.getIdCategoria()));
+			
+			produtoRepository.save(produto);
+		
 	}
 
 	@Override
 	public void delete(UUID id) throws Exception {
-		Produto produto = produtoRepository.findById(id).get();
+		Produto produto = findById(id);
 		produtoRepository.delete(produto);
 	}
 
@@ -73,7 +80,29 @@ public class ProdutoServiceImpl implements ProdutoService{
 
 	@Override
 	public Produto findById(UUID id) throws Exception {
-		return produtoRepository.findById(id).get();
+		Optional<Produto> produto = produtoRepository.findById(id);
+		if (produto.isEmpty()) {
+			throw new IllegalArgumentException("Produto não encontrado. Verique o ID.");
+		}
+		return produto.get();
 	}
-
+	
+	private Categoria obterCategoria(UUID id) {
+		Optional<Categoria> categoria = categoriaRepository.findById(id);
+		
+		if (categoria.isEmpty()) 
+			throw new IllegalArgumentException("Erro. A categoria informado não existe.");
+			
+			return categoria.get();
+	}
+	
+	private Fornecedor obterFornecedor(UUID id) {
+		Optional<Fornecedor> fornecedor = fornecedorRepository.findById(id);
+		
+		if (fornecedor.isEmpty()) 
+			throw new IllegalArgumentException("Erro. O fornecedor informado não existe.");
+			
+			return fornecedor.get();
+	}
+		
 }
